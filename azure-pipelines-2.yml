@@ -47,7 +47,6 @@ stages:
 - stage: Deploy
   displayName: Deploy stage
   dependsOn: Build
-
   jobs:
   - deployment: Deploy
     displayName: Deploy
@@ -64,10 +63,10 @@ stages:
               action: createSecret
               secretName: $(imagePullSecret)
               dockerRegistryEndpoint: $(dockerRegistryServiceConnection)
-
           - script: |
               # Generate deployment YAML dynamically
-              echo "apiVersion: apps/v1
+              cat <<EOF > $(Pipeline.Workspace)/manifests/deployment.yml
+              apiVersion: apps/v1
               kind: Deployment
               metadata:
                 name: myapp
@@ -87,10 +86,12 @@ stages:
                     - name: myapp
                       image: $(containerRegistry)/$(imageRepository):$(tag)
                       ports:
-                      - containerPort: 80" > $(Pipeline.Workspace)/manifests/deployment.yml
+                      - containerPort: 80
+              EOF
 
               # Generate service YAML dynamically
-              echo "apiVersion: v1
+              cat <<EOF > $(Pipeline.Workspace)/manifests/service.yml
+              apiVersion: v1
               kind: Service
               metadata:
                 name: myapp
@@ -98,12 +99,12 @@ stages:
                 selector:
                   app: myapp
                 ports:
-                  - protocol: TCP
-                    port: 80
-                    targetPort: 5000 > $(Pipeline.Workspace)/manifests/service.yml
-                type: LoadBalancer > $(Pipeline.Workspace)/manifests/service.yml
+                - protocol: TCP
+                  port: 80
+                  targetPort: 80
+              type: LoadBalancer
+              EOF
             displayName: Generate YAML files
-
           - task: KubernetesManifest@0
             displayName: Deploy to Kubernetes cluster
             inputs:

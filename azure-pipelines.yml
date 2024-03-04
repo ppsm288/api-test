@@ -9,15 +9,15 @@ resources:
 - repo: self
 
 variables:
-  # Container registry service connection established during pipeline creation
   dockerRegistryServiceConnection: '87ccf024-d555-48f5-a5a4-5d26eadc8d6a'
   imageRepository: 'mterra'
   containerRegistry: 'terraacr789.azurecr.io'
   dockerfilePath: '**/Dockerfile'
   tag: '$(Build.BuildId)'
-
-  # Agent VM image name
   vmImageName: 'ubuntu-latest'
+  k8sNamespace: 'terraname' # customize with your Kubernetes namespace
+  imagePullSecret: 'terrasecret' # customize with your image pull secret name
+
 
 stages:
 - stage: Build
@@ -37,3 +37,43 @@ stages:
         containerRegistry: $(dockerRegistryServiceConnection)
         tags: |
           $(tag)
+
+- stage: Deploy
+  displayName: Deploy stage
+  dependsOn: Build
+  condition: succeeded('Build')  # Run this stage only if the 'Build' stage succeeded
+  jobs:
+  - deployment: Deploy
+    displayName: Deploy job
+    pool:
+      vmImage: $(vmImageName)
+    environment: 'terraname' # customize with your environment
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              artifactName: 'manifests'
+              downloadPath: '$(System.ArtifactsDirectory)/manifests'
+
+          - task: KubernetesManifest@0
+            displayName: Create imagePullSecret
+            inputs:
+              action: createSecret
+              secretName: $(imagePullSecret)
+              namespace: $(k8sNamespace)
+              dockerRegistryEndpoint: $(dockerRegistryServiceConnection)
+
+          - task: KubernetesManifest@0
+            displayName: Deploy to Kubernetes cluster
+            inputs:
+              action: deploy
+              namespace: $(k8sNamespace)
+              manifests: |
+                $(System.ArtifactsDirectory)/manifests/deployment.yml
+                $(System.ArtifactsDirectory)/manifests/service.yml
+              imagePullSecrets: |
+                $(imagePullSecret)
+              containers: |
+                $(containerRegistry)/$(imageRepository):$(tag)

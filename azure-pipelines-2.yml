@@ -101,6 +101,7 @@ stages:
                   - protocol: TCP
                     port: 80
                     targetPort: 5000" > $(Pipeline.Workspace)/manifests/service.yml
+                type: LoadBalancer" > $(Pipeline.Workspace)/manifests/service.yml
             displayName: Generate YAML files
 
           - task: KubernetesManifest@0

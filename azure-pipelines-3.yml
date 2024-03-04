@@ -102,7 +102,7 @@ stages:
                 - protocol: TCP
                   port: 80
                   targetPort: 80
-              type: LoadBalancer
+                type: LoadBalancer
               EOF
             displayName: Generate YAML files
           - task: KubernetesManifest@0

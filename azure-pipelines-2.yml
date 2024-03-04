@@ -98,11 +98,11 @@ stages:
               spec:
                 selector:
                   app: myapp
+                type: LoadBalancer
                 ports:
                 - protocol: TCP
                   port: 80
                   targetPort: 80
-              type: LoadBalancer
               EOF
             displayName: Generate YAML files
           - task: KubernetesManifest@0

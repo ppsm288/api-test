@@ -1,0 +1,19 @@
+apiVersion : apps/v1
+kind: Deployment
+metadata:
+  name: pterra100 
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pterra100
+  template:
+    metadata:
+      labels:
+        app: pterra100 
+    spec:
+      containers:
+        - name: pterra100 
+          image: terraacr789.azurecr.io/pterra100
+          ports:
+          - containerPort: 5000
